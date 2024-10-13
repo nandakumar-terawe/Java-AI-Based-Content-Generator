@@ -132,38 +132,61 @@ stages:
         pool:
           vmImage: 'ubuntu-latest'
         steps:
-          - script: |
-              chmod +x backend/mvnw
-              ./backend/mvnw clean package
-              az acr login -n $(AcrName)
-              az aks get-credentials --resource-group $(resourceGroup) --name $(AKS)
-              docker build -t $(AcrName).azurecr.io/aistudy/backend:latest backend/
-              docker push $(AcrName).azurecr.io/aistudy/backend:latest
-              kubectl apply -f backend/backend-deployment.yml
+          - task: Docker@2
+            inputs:
+              containerRegistry: '$(DockerRegistry)'
+              repository: '$(AcrName).azurecr.io/aistudy/backend'
+              command: 'buildAndPush'
+              Dockerfile: '/backend/Dockerfile'
+              tags: 'latest'
+          - task: KubernetesManifest@1
+            inputs:
+              action: 'deploy'
+              connectionType: 'azureResourceManager'
+              azureSubscriptionConnection: '$(AzureSubscription)'
+              azureResourceGroup: '$(ResourceGroupName)'
+              kubernetesCluster: '$(AKS)'
+              manifests: 'backend/backend-deployment.yml'
 
       - job: Deploy_Middleware_AKS
         displayName: 'Deploy Middleware to Azure Kubernetes Service'
         pool:
           vmImage: 'ubuntu-latest'
         steps:
-          - script: |
-              chmod +x middleware/mvnw
-              ./middleware/mvnw clean package
-              az acr login -n $(AcrName)
-              az aks get-credentials --resource-group $(resourceGroup) --name $(AKS)
-              docker build -t $(AcrName).azurecr.io/aistudy/middleware:latest middleware/
-              docker push $(AcrName).azurecr.io/aistudy/middleware:latest
-              kubectl apply -f middleware/middleware-deployment.yml
+          - task: Docker@2
+            inputs:
+              containerRegistry: '$(DockerRegistry)'
+              repository: '$(AcrName).azurecr.io/aistudy/middleware'
+              command: 'buildAndPush'
+              Dockerfile: '/middleware/Dockerfile'
+              tags: 'latest'
+          - task: KubernetesManifest@1
+            inputs:
+              action: 'deploy'
+              connectionType: 'azureResourceManager'
+              azureSubscriptionConnection: '$(AzureSubscription)'
+              azureResourceGroup: '$(ResourceGroupName)'
+              kubernetesCluster: '$(AKS)'
+              manifests: 'middleware/middleware-deployment.yml'
 
       - job: Deploy_Frontend_AKS
         displayName: 'Deploy Frontend to Azure Kubernetes Service'
         pool:
           vmImage: 'ubuntu-latest'
         steps:
-          - script: |
-              az acr login -n $(AcrName)
-              az aks get-credentials --resource-group $(resourceGroup) --name $(AKS)
-              docker build -t $(AcrName).azurecr.io/aistudy/frontend:latest frontend/
-              docker push $(AcrName).azurecr.io/aistudy/frontend:latest
-              kubectl apply -f frontend/frontend-deployment.yml
+          - task: Docker@2
+            inputs:
+              containerRegistry: '$(DockerRegistry)'
+              repository: '$(AcrName).azurecr.io/aistudy/frontend'
+              command: 'buildAndPush'
+              Dockerfile: '/frontend/Dockerfile'
+              tags: 'latest'
+          - task: KubernetesManifest@1
+            inputs:
+              action: 'deploy'
+              connectionType: 'azureResourceManager'
+              azureSubscriptionConnection: '$(AzureSubscription)'
+              azureResourceGroup: '$(ResourceGroupName)'
+              kubernetesCluster: '$(AKS)'
+              manifests: 'frontend/frontend-deployment.yml'
       
