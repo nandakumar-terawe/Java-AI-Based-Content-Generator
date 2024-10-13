@@ -14,18 +14,18 @@ spec:
     spec:
       containers:
         - name: middleware
-          image: "$(AcrName).azurecr.io/aistudy/frontend:latest"
+          image: aistudy1.azurecr.io/aistudy/frontend:latest
           ports:
             - containerPort: 80
           env:
             - name: REACT_APP_SERVICE_BASE_URL
-              value: "$(MiddlewareServiceBaseUrl)"
+              value: <MIDDLEWARE_SERVICE_BASE_URL>
             - name: REACT_APP_CLIENT_ID
-              value: "$(MsalAppId)"
+              value: c23e9e28-22a3-4f63-880f-eaa88fce0503
             - name: REACT_APP_CONTENT_GENERATOR_ENDPOINT
-              value: "$(MiddlewareServiceGenerateContentEndpoint)"
+              value: "/api/v1/generate/content"
             - name: REACT_APP_SERVICE_ACCESS_KEY
-              value: "$(MiddlewareServiceAccessKey)"
+              value: "b2dd28f8a77141d5a35baf3e2f3fcd45"
 ---
 apiVersion: v1
 kind: Service

@@ -14,12 +14,12 @@ spec:
     spec:
       containers:
         - name: backend
-          image: "$(AcrName).azurecr.io/aistudy/backend:latest"
+          image: aistudy1.azurecr.io/aistudy/backend:latest
           ports:
             - containerPort: 8080
           env:
             - name: AZURE_KEYVAULT_URI
-              value: "$(AZURE_KEYVAULT_URI)"
+              value: https://aistudy1.vault.azure.net/
 ---
 apiVersion: v1
 kind: Service
