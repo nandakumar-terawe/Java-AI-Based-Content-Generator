@@ -14,12 +14,12 @@ spec:
     spec:
       containers:
         - name: middleware
-          image: <ACR_NAME>.azurecr.io/aistudy/middleware:latest
+          image: "$(AcrName).azurecr.io/aistudy/middleware:latest"
           ports:
             - containerPort: 8080
           env:
             - name: AZURE_KEYVAULT_URI
-              value: https://<KEYVAULT_NAME>.vault.azure.net/
+              value: "$(AZURE_KEYVAULT_URI)"
 ---
 apiVersion: v1
 kind: Service
