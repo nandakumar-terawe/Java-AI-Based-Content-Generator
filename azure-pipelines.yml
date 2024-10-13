@@ -7,7 +7,7 @@ parameters:
   - name: deploymentTarget
     displayName: 'Select Deployment Target'
     type: string
-    default: 'AppService'
+    default: 'AKS'
     values:
       - AppService
       - AKS
@@ -27,6 +27,12 @@ jobs:
       - task: Maven@4
         inputs:
           mavenPomFile: 'backend/pom.xml'
+          mavenOptions: '-Xmx3072m'
+          javaHomeOption: 'JDKVersion'
+          jdkVersionOption: '1.17'   # JDK Version set to 17
+          jdkArchitectureOption: 'x64'
+          publishJUnitResults: true
+          testResultsFiles: '**/TEST-*.xml'
           goals: 'clean package'
       # Publish the artifact
       - publish: 'backend/target/backend.war'
@@ -40,6 +46,12 @@ jobs:
       - task: Maven@4
         inputs:
           mavenPomFile: 'middleware/pom.xml'
+          mavenOptions: '-Xmx3072m'
+          javaHomeOption: 'JDKVersion'
+          jdkVersionOption: '1.17'   # JDK Version set to 17
+          jdkArchitectureOption: 'x64'
+          publishJUnitResults: true
+          testResultsFiles: '**/TEST-*.xml'
           goals: 'clean package'
       # Publish the artifact
       - publish: 'middleware/target/middleware.war'
