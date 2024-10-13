@@ -132,6 +132,11 @@ stages:
         pool:
           vmImage: 'ubuntu-latest'
         steps:
+          - task: CmdLine@2
+            inputs:
+              script: |
+                chmod +x backend/mvnw
+                backend/mvnw clean package
           - task: Docker@2
             inputs:
               containerRegistry: '$(DockerRegistry)'
@@ -153,6 +158,11 @@ stages:
         pool:
           vmImage: 'ubuntu-latest'
         steps:
+          - task: CmdLine@2
+            inputs:
+              script: |
+                chmod +x middleware/mvnw
+                middleware/mvnw clean package
           - task: Docker@2
             inputs:
               containerRegistry: '$(DockerRegistry)'
