@@ -135,6 +135,7 @@ stages:
           - script: |
               chmod +x backend/mvnw
               ./backend/mvnw clean package
+              az acr login -n $(AcrName)
               az aks get-credentials --resource-group $(resourceGroup) --name $(AKS)
               docker build -t $(AcrName).azurecr.io/aistudy/backend:latest backend/
               docker push $(AcrName).azurecr.io/aistudy/backend:latest
@@ -148,6 +149,7 @@ stages:
           - script: |
               chmod +x middleware/mvnw
               ./middleware/mvnw clean package
+              az acr login -n $(AcrName)
               az aks get-credentials --resource-group $(resourceGroup) --name $(AKS)
               docker build -t $(AcrName).azurecr.io/aistudy/middleware:latest middleware/
               docker push $(AcrName).azurecr.io/aistudy/middleware:latest
@@ -159,6 +161,7 @@ stages:
           vmImage: 'ubuntu-latest'
         steps:
           - script: |
+              az acr login -n $(AcrName)
               az aks get-credentials --resource-group $(resourceGroup) --name $(AKS)
               docker build -t $(AcrName).azurecr.io/aistudy/frontend:latest frontend/
               docker push $(AcrName).azurecr.io/aistudy/frontend:latest
