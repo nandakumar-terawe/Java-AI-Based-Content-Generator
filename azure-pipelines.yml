@@ -21,9 +21,10 @@ stages:
           - task: CmdLine@2
             inputs:
               script: |
+                cd backend
                 chmod +x mvnw
                 ./mvnw clean package -X
-              workingDirectory: 'backend'
+                cd ..
               
           - task: Docker@2
             inputs:
