@@ -1,7 +1,7 @@
 trigger:
   branches:
     include:
-      - feature/ci-test
+      - feature/ci-test-ui
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -14,45 +14,21 @@ stages:
   - stage: BuildAndPush
     displayName: 'Build and Push Docker Images to ACR'
     jobs:
-      - job: BuildAndPush_Backend
-        displayName: 'Build and Push Backend Service'
-        
-        steps:
-          - checkout: self
-
-          # Maven build to generate the backend WAR file
-          - task: Maven@4
-            inputs:
-              mavenPomFile: 'backend/pom.xml'
-              mavenOptions: '-Xmx3072m'
-              javaHomeOption: 'JDKVersion'
-              jdkVersionOption: '1.17'   # JDK Version set to 17
-              jdkArchitectureOption: 'x64'
-              publishJUnitResults: true
-              testResultsFiles: '**/TEST-*.xml'
-              goals: 'clean package'
-          
-          # Publish the WAR file as an artifact
-          - publish: backend/target/backend.war
-            artifact: backend_war
-          
-          # Docker build and push using the published WAR file
-          - task: Docker@2
-            inputs:
-              containerRegistry: '$(DockerRegistry)'
-              repository: '$(AcrName).azurecr.io/aistudy/backend'
-              command: 'buildAndPush'
-              Dockerfile: 'backend/Dockerfile'
-              buildContext: 'backend'
-              tags: 'latest'
-
+  
       - job: BuildFrontend
         steps:
+          - checkout: self
+          # Install dependencies and build the React app
+          - task: Npm@1
+            inputs:
+              command: 'install'
+              workingDir: 'frontend'
+
           - task: Npm@1
             inputs:
               command: 'custom'
               workingDir: 'frontend'
-              customCommand: 'npm install && npm run build'
+              customCommand: 'run build'
 
           - publish: 'frontend/build'
             artifact: frontend
@@ -73,15 +49,6 @@ stages:
               azureSubscriptionConnection: '$(AzureSubscription)'
               azureResourceGroup: '$(ResourceGroupName)'
               kubernetesCluster: '$(AKS)'
-              manifests: 'backend/backend-deployment.yml'
-              containers: '$(AcrName).azurecr.io/aistudy/backend:latest'
-          
-          - task: KubernetesManifest@1
-            inputs:
-              action: 'deploy'
-              connectionType: 'azureResourceManager'
-              azureSubscriptionConnection: '$(AzureSubscription)'
-              azureResourceGroup: '$(ResourceGroupName)'
-              kubernetesCluster: '$(AKS)'
               manifests: 'frontend/frontend-deployment.yml'
               containers: '$(AcrName).azurecr.io/aistudy/frontend:latest'
+
