@@ -46,6 +46,17 @@ stages:
               buildContext: 'backend'
               tags: 'latest'
 
+      - job: BuildFrontend
+        steps:
+          - task: Npm@1
+            inputs:
+              command: 'custom'
+              workingDir: 'frontend'
+              customCommand: 'npm install && npm run build'
+
+          - publish: 'frontend/build'
+            artifact: frontend
+
   - stage: DeployToAKS
     displayName: 'Deploy Services to AKS'
     dependsOn: BuildAndPush
@@ -64,3 +75,13 @@ stages:
               kubernetesCluster: '$(AKS)'
               manifests: 'backend/backend-deployment.yml'
               containers: '$(AcrName).azurecr.io/aistudy/backend:latest'
+          
+          - task: KubernetesManifest@1
+            inputs:
+              action: 'deploy'
+              connectionType: 'azureResourceManager'
+              azureSubscriptionConnection: '$(AzureSubscription)'
+              azureResourceGroup: '$(ResourceGroupName)'
+              kubernetesCluster: '$(AKS)'
+              manifests: 'frontend/frontend-deployment.yml'
+              containers: '$(AcrName).azurecr.io/aistudy/frontend:latest'
