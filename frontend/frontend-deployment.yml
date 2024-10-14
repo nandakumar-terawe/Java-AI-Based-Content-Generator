@@ -14,18 +14,18 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: aistudy1.azurecr.io/aistudy/frontend:latest
+          image: <ACR_NAME>.azurecr.io/aistudy/frontend:latest
           ports:
             - containerPort: 80
           env:
             - name: REACT_APP_SERVICE_BASE_URL
               value: <MIDDLEWARE_SERVICE_BASE_URL>
             - name: REACT_APP_CLIENT_ID
-              value: c23e9e28-22a3-4f63-880f-eaa88fce0503
+              value: <APP_CLIENT_ID>
             - name: REACT_APP_CONTENT_GENERATOR_ENDPOINT
-              value: "/api/v1/generate/content"
+              value: <CONTENT_GENERATOR_ENDPOINT>
             - name: REACT_APP_SERVICE_ACCESS_KEY
-              value: "b2dd28f8a77141d5a35baf3e2f3fcd45"
+              value: <MIDDLEWARE_SERVICE_ACCESS_KEY>
 ---
 apiVersion: v1
 kind: Service
