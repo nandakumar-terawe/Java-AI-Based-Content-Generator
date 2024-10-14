@@ -19,9 +19,11 @@ stages:
         
         steps:
           - checkout: self
+
+          # Maven build to generate the backend WAR file
           - task: Maven@4
             inputs:
-              mavenPomFile: 'middleware/pom.xml'
+              mavenPomFile: 'backend/pom.xml'
               mavenOptions: '-Xmx3072m'
               javaHomeOption: 'JDKVersion'
               jdkVersionOption: '1.17'   # JDK Version set to 17
@@ -29,13 +31,19 @@ stages:
               publishJUnitResults: true
               testResultsFiles: '**/TEST-*.xml'
               goals: 'clean package'
-              
+          
+          # Publish the WAR file as an artifact
+          - publish: backend/target/backend.war
+            artifact: backend_war
+          
+          # Docker build and push using the published WAR file
           - task: Docker@2
             inputs:
               containerRegistry: '$(DockerRegistry)'
               repository: '$(AcrName).azurecr.io/aistudy/backend'
               command: 'buildAndPush'
               Dockerfile: 'backend/Dockerfile'
+              buildContext: 'backend'
               tags: 'latest'
 
   - stage: DeployToAKS
@@ -44,7 +52,23 @@ stages:
     jobs:
       - job: Deploy_Backend_AKS
         displayName: 'Deploy Backend to AKS'
+        
         steps:
+          # Download the artifact from the Build stage
+          - download: current
+            artifact: backend_war
+
+          # (Optional) Build and Push Docker Image - only if you need to push updated images
+          - task: Docker@2
+            inputs:
+              containerRegistry: '$(DockerRegistry)'
+              repository: '$(AcrName).azurecr.io/aistudy/backend'
+              command: 'buildAndPush'
+              Dockerfile: 'backend/Dockerfile'
+              buildContext: 'backend'
+              tags: 'latest'
+
+          # Deploy to AKS
           - task: KubernetesManifest@1
             inputs:
               action: 'deploy'
@@ -53,5 +77,4 @@ stages:
               azureResourceGroup: '$(ResourceGroupName)'
               kubernetesCluster: '$(AKS)'
               manifests: 'backend/backend-deployment.yml'
-
-      
+              containers: '$(AcrName).azurecr.io/aistudy/backend:latest'
