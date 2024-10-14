@@ -18,13 +18,17 @@ stages:
         displayName: 'Build and Push Backend Service'
         
         steps:
-          - task: CmdLine@2
+          - checkout: self
+          - task: Maven@4
             inputs:
-              script: |
-                cd backend
-                chmod +x mvnw
-                ./mvnw clean package -X
-                cd ..
+              mavenPomFile: 'middleware/pom.xml'
+              mavenOptions: '-Xmx3072m'
+              javaHomeOption: 'JDKVersion'
+              jdkVersionOption: '1.17'   # JDK Version set to 17
+              jdkArchitectureOption: 'x64'
+              publishJUnitResults: true
+              testResultsFiles: '**/TEST-*.xml'
+              goals: 'clean package'
               
           - task: Docker@2
             inputs:
