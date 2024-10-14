@@ -54,20 +54,6 @@ stages:
         displayName: 'Deploy Backend to AKS'
         
         steps:
-          # Download the artifact from the Build stage
-          - download: current
-            artifact: backend_war
-
-          # (Optional) Build and Push Docker Image - only if you need to push updated images
-          - task: Docker@2
-            inputs:
-              containerRegistry: '$(DockerRegistry)'
-              repository: '$(AcrName).azurecr.io/aistudy/backend'
-              command: 'buildAndPush'
-              Dockerfile: 'backend/Dockerfile'
-              buildContext: 'backend'
-              tags: 'latest'
-
           # Deploy to AKS
           - task: KubernetesManifest@1
             inputs:
