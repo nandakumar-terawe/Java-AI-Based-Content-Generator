@@ -14,7 +14,6 @@ variables:
 stages:
   - stage: Build
     displayName: 'Build Stage'
-    condition: eq(variables['DeploymentTarget'], 'AppService')
     jobs:
       - job: Build_Backend
         displayName: 'Build Backend Service'
@@ -32,8 +31,19 @@ stages:
               publishJUnitResults: true
               testResultsFiles: '**/TEST-*.xml'
               goals: 'clean package'
-          - publish: '$(System.DefaultWorkingDirectory)/backend/target/backend.war'
+          - publish: 'backend/target/backend.war'
             artifact: backend
+
+            # Docker build and push using the published WAR file
+          - task: Docker@2
+            condition: eq(variables['DeploymentTarget'], 'AKS')
+            inputs:
+              containerRegistry: '$(DockerRegistry)'
+              repository: '$(AcrName).azurecr.io/aistudy/backend'
+              command: 'buildAndPush'
+              Dockerfile: 'backend/Dockerfile'
+              buildContext: 'backend'
+              tags: 'latest'
 
       - job: Build_Middleware
         displayName: 'Build Middleware Service'
@@ -51,21 +61,57 @@ stages:
               publishJUnitResults: true
               testResultsFiles: '**/TEST-*.xml'
               goals: 'clean package'
-          - publish: '$(System.DefaultWorkingDirectory)/middleware/target/middleware.war'
+          - publish: 'middleware/target/middleware.war'
             artifact: middleware
+
+          # Docker build and push using the published WAR file
+          - task: Docker@2
+            condition: eq(variables['DeploymentTarget'], 'AKS')
+            inputs:
+              containerRegistry: '$(DockerRegistry)'
+              repository: '$(AcrName).azurecr.io/aistudy/middleware'
+              command: 'buildAndPush'
+              Dockerfile: 'middleware/Dockerfile'
+              buildContext: 'middleware'
+              tags: 'latest'
 
       - job: Build_Frontend
         displayName: 'Build Frontend Service'
+        condition: eq(variables['DeploymentTarget'], 'AppService')
         pool:
           vmImage: 'ubuntu-latest'
         steps:
           - checkout: self
-          - script: |
-              cd frontend
-              npm install
-              npm run build
-          - publish: '$(System.DefaultWorkingDirectory)/frontend/build'
+          # Install dependencies and build the React app
+          - task: Npm@1
+            inputs:
+              command: 'install'
+              workingDir: 'frontend'
+
+          - task: Npm@1
+            inputs:
+              command: 'custom'
+              workingDir: 'frontend'
+              customCommand: 'run build'
+
+          - publish: 'frontend/build'
             artifact: frontend
+
+      - job: Build_Frontend_AKS
+        displayName: 'Build Frontend Service'
+        condition: eq(variables['DeploymentTarget'], 'AKS')
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - checkout: self
+          - task: Docker@2
+            inputs:
+              containerRegistry: '$(DockerRegistry)'
+              repository: '$(AcrName).azurecr.io/aistudy/frontend'
+              command: 'buildAndPush'
+              Dockerfile: 'frontend/Dockerfile'
+              buildContext: 'frontend'
+              tags: 'latest'
 
   - stage: Deploy_AppServices
     displayName: 'Deploy to Azure App Services'
@@ -132,19 +178,6 @@ stages:
         pool:
           vmImage: 'ubuntu-latest'
         steps:
-          - task: CmdLine@2
-            inputs:
-              script: |
-                cd backend
-                chmod +x mvnw
-                ./mvnw clean package -X
-          - task: Docker@2
-            inputs:
-              containerRegistry: '$(DockerRegistry)'
-              repository: '$(AcrName).azurecr.io/aistudy/backend'
-              command: 'buildAndPush'
-              Dockerfile: 'backend/Dockerfile'
-              tags: 'latest'
           - task: KubernetesManifest@1
             inputs:
               action: 'deploy'
@@ -159,19 +192,6 @@ stages:
         pool:
           vmImage: 'ubuntu-latest'
         steps:
-          - task: CmdLine@2
-            inputs:
-              script: |
-                cd middleware
-                chmod +x mvnw
-                ./mvnw clean package -X
-          - task: Docker@2
-            inputs:
-              containerRegistry: '$(DockerRegistry)'
-              repository: '$(AcrName).azurecr.io/aistudy/middleware'
-              command: 'buildAndPush'
-              Dockerfile: 'middleware/Dockerfile'
-              tags: 'latest'
           - task: KubernetesManifest@1
             inputs:
               action: 'deploy'
@@ -186,13 +206,6 @@ stages:
         pool:
           vmImage: 'ubuntu-latest'
         steps:
-          - task: Docker@2
-            inputs:
-              containerRegistry: '$(DockerRegistry)'
-              repository: '$(AcrName).azurecr.io/aistudy/frontend'
-              command: 'buildAndPush'
-              Dockerfile: 'frontend/Dockerfile'
-              tags: 'latest'
           - task: KubernetesManifest@1
             inputs:
               action: 'deploy'
